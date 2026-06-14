@@ -1,0 +1,109 @@
+version: "3.8"
+
+services:
+  orchestrator:
+    build:
+      context: services/orchestrator
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      RPC_URL: ${RPC_URL:-http://127.0.0.1:9650}
+      CHAIN_ID: ${CHAIN_ID:-99999}
+      ORCHESTRATOR_PRIVATE_KEY: ${ORCHESTRATOR_PRIVATE_KEY}
+      MIN_REPUTATION_SCORE: ${MIN_REPUTATION_SCORE:-50}
+      SESSION_SPEND_CAP: ${SESSION_SPEND_CAP:-1.0}
+    depends_on:
+      - devnet
+    volumes:
+      - ./shared:/app/shared:ro
+    networks:
+      - agent-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  devnet:
+    image: node:20-alpine
+    working_dir: /workspace
+    command: >
+      sh -c "
+      npm install &&
+      cd contracts &&
+      npm install &&
+      npx hardhat node --port 9650 --hostname 0.0.0.0
+      "
+    ports:
+      - "9650:9650"
+    volumes:
+      - ./:/workspace
+    networks:
+      - agent-network
+
+  summarizer:
+    image: node:20-alpine
+    working_dir: /workspace/services/specialist-summarizer
+    command: >
+      sh -c "
+      npm install &&
+      node server.js
+      "
+    ports:
+      - "4001:4001"
+    environment:
+      AGENT_SUMMARIZE_PRIVATE_KEY: ${AGENT_SUMMARIZE_PRIVATE_KEY}
+      RPC_URL: http://devnet:9650
+    depends_on:
+      - devnet
+    volumes:
+      - ./:/workspace
+    networks:
+      - agent-network
+
+  translator:
+    image: node:20-alpine
+    working_dir: /workspace/services/specialist-translator
+    command: >
+      sh -c "
+      npm install &&
+      node server.js
+      "
+    ports:
+      - "4002:4002"
+    environment:
+      AGENT_TRANSLATE_PRIVATE_KEY: ${AGENT_TRANSLATE_PRIVATE_KEY}
+      RPC_URL: http://devnet:9650
+    depends_on:
+      - devnet
+    volumes:
+      - ./:/workspace
+    networks:
+      - agent-network
+
+  frontend:
+    image: node:20-alpine
+    working_dir: /workspace/frontend
+    command: >
+      sh -c "
+      npm install &&
+      npm run dev
+      "
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_ORCHESTRATOR_URL: http://localhost:5000
+      NEXT_PUBLIC_RPC_URL: http://127.0.0.1:9650
+      CHAIN_ID: 99999
+    depends_on:
+      - orchestrator
+    volumes:
+      - ./frontend:/workspace/frontend
+    networks:
+      - agent-network
+
+networks:
+  agent-network:
+    driver: bridge
