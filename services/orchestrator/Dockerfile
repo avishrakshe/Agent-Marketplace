@@ -3,12 +3,12 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY services/orchestrator/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy orchestrator source files and shared deploy metadata
-COPY services/orchestrator .
-COPY shared ./shared
+COPY . .
+COPY ../shared ./shared
 
 # Expose port
 EXPOSE 5000
