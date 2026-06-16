@@ -18,9 +18,17 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from web3 import Web3
 
-ROOT = Path(__file__).resolve().parents[2]
-load_dotenv(ROOT / ".env")
-load_dotenv(ROOT / "services" / "orchestrator" / ".env", override=True)
+HERE = Path(__file__).resolve()
+ROOT = HERE.parent
+for ancestor in [HERE.parent] + list(HERE.parents):
+    if (ancestor / "shared" / "deployed.json").exists():
+        ROOT = ancestor
+        break
+
+if (ROOT / "services" / "orchestrator" / ".env").exists():
+    load_dotenv(ROOT / "services" / "orchestrator" / ".env", override=True)
+if (ROOT / ".env").exists():
+    load_dotenv(ROOT / ".env")
 
 RPC_URL = os.getenv("RPC_URL", "http://127.0.0.1:9650")
 CHAIN_ID = int(os.getenv("CHAIN_ID", "99999"))
