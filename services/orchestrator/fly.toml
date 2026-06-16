@@ -1,0 +1,9 @@
+app = "agent-orchestrator"
+primary_region = "iad"
+
+[build]
+  image = "agent-orchestrator:latest"
+
+[env]
+  PORT = "8000"
+  ORCHESTRATOR_PORT = "8000"

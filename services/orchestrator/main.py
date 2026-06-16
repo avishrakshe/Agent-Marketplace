@@ -428,4 +428,5 @@ async def run_task(req: TaskRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("ORCHESTRATOR_PORT", "5000")))
+    port = int(os.getenv("ORCHESTRATOR_PORT") or os.getenv("PORT", "5000"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
